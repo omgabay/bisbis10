@@ -10,4 +10,14 @@ class Bis10ApplicationTests {
 	void contextLoads() {
 	}
 
+	class RestaurantControllerTests{
+
+		@Test
+		void getRestaurantsByCuisine(){
+			String cuisine = "american";
+
+		}
+	}
+
+
 }
