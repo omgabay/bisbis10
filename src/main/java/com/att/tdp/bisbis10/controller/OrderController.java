@@ -1,6 +1,6 @@
 package com.att.tdp.bisbis10.controller;
 
-
+import com.att.tdp.bisbis10.entities.OrderResult;
 import com.att.tdp.bisbis10.entities.Order;
 import com.att.tdp.bisbis10.logic.OrderService;
 import org.slf4j.Logger;
@@ -23,17 +23,14 @@ public class OrderController {
 
 
     @PostMapping("/order")
-    ResponseEntity<Order> createOrder(@RequestBody Order order) {
+    ResponseEntity<OrderResult> createOrder(@RequestBody Order order) {
         try{
-            Order savedOrder = this.orderService.submitOrder(order);
+            OrderResult savedOrder = this.orderService.submitOrder(order);
             return ResponseEntity.ok(savedOrder);
         }catch (IllegalArgumentException iae){
             logger.error(iae.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
-
-
-
 
 }

@@ -1,48 +1,40 @@
 package com.att.tdp.bisbis10.entities;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 
 @Entity
 @Table(name = "ratings")
+@Getter
+@Setter
+@ToString
 public class UserRating {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     Long id;
 
-    @Column(name = "restaurant_id", nullable = false)
-    Long restaurantId;
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id") // Foreign key column
+    @JsonIgnore
+    private Restaurant restaurant;
 
-    Double rating;
+    @Column(name = "rating")
+    double rating;
 
-    public UserRating() {}
+    public UserRating() {
+        this.restaurant = new Restaurant();
+    }
 
-    public Long getRestaurantId() {
-        return restaurantId;
+    public Long getRestaurantId(){
+        return this.restaurant.getRestaurantId();
     }
 
     public void setRestaurantId(Long restaurantId) {
-        this.restaurantId = restaurantId;
-    }
-
-
-    public Long id() {
-        return id;
-    }
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-
-    public void setRating(Double rating) {
-        this.rating = rating;
-    }
-
-
-    public Double getRating() {
-        return rating;
+        this.restaurant.setRestaurantId(restaurantId);
     }
 
 }

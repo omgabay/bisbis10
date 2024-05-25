@@ -1,31 +1,17 @@
 package com.att.tdp.bisbis10.entities;
 
-import com.att.tdp.bisbis10.auxillary.OrderItemConverter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
 
-import java.util.UUID;
-
-
-@Entity
+@Getter
+@Setter
 public class Order {
-
-
-
-    private UUID orderId;
 
     private Long restaurantId;
 
+    private List<OrderItem> orderItems;
 
-    public Long getRestaurantId() {
-        return restaurantId;
-    }
-
-    public void setRestaurantId(Long restaurantId) {
-        this.restaurantId = restaurantId;
-    }
 
 }
-
-

@@ -1,19 +1,23 @@
 package com.att.tdp.bisbis10.entities;
 
-
 import com.att.tdp.bisbis10.auxillary.StringListConverter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 @Entity
+@Getter
+@Setter
 public class Restaurant {
 
     @Id
@@ -24,6 +28,7 @@ public class Restaurant {
     @Column(name="name")
     private String name;
 
+    @Setter
     @Column(name="is_kosher")
     private boolean isKosher;
 
@@ -34,12 +39,16 @@ public class Restaurant {
     @Column(name="average_rating")
     private Double averageRating = 0.0;
 
-    @OneToMany(mappedBy = "restaurant", orphanRemoval = true, cascade = CascadeType.PERSIST)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name="restaurant_id")
+   @JsonIgnore
     private List<Dish> dishes =  new ArrayList<>();
 
 
-    @OneToMany(mappedBy = "restaurant", orphanRemoval = true, cascade = CascadeType.PERSIST)
-    private List<Order> orders = new ArrayList<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name="restaurant_id")
+    @JsonIgnore
+    private List<UserRating> userRatings = new ArrayList<>();
 
     public Restaurant() {}
 
@@ -56,60 +65,16 @@ public class Restaurant {
         return restaurantId;
     }
 
-    public List<Dish> getDishes() {
-        return dishes;
-    }
-
-    public void setAverageRating(Double averageRating) {
-        this.averageRating = averageRating;
-    }
-
-    public Long getRestaurantId() {
-        return restaurantId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public boolean getIsKosher() {
-        return isKosher;
-    }
-
-    public void setKosher(boolean kosher) {
-        isKosher = kosher;
-    }
-
-    public List<String> getCuisines() {
-        return cuisines;
-    }
-
-    public void setCuisines(List<String> cuisines) {
-        this.cuisines = cuisines;
-    }
-
-    public Double getAverageRating() {
-        return averageRating;
-    }
-
-    public void setDishes(List<Dish> dishes) {
-        this.dishes = dishes;
-    }
-
-    public void addDish(Dish dish) {
-        this.dishes.add(dish);
-    }
-
 
     public Restaurant applyPatchToRestaurant(JsonPatch patch, ObjectMapper objectMapper) throws JsonPatchException, JsonProcessingException {
         JsonNode patched = patch.apply(objectMapper.convertValue(this, JsonNode.class));
         return objectMapper.treeToValue(patched, Restaurant.class);
     }
 
+
+    public boolean getIsKosher() {
+        return isKosher;
+    }
 
     @Override
     public String toString(){

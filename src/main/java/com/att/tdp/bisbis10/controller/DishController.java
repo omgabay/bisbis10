@@ -2,8 +2,11 @@ package com.att.tdp.bisbis10.controller;
 
 import com.att.tdp.bisbis10.entities.Dish;
 import com.att.tdp.bisbis10.entities.Restaurant;
+import com.att.tdp.bisbis10.logic.RestaurantService;
 import com.att.tdp.bisbis10.repos.DishRepository;
 import com.att.tdp.bisbis10.repos.RestaurantRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -19,8 +22,14 @@ public class DishController {
 
     private final DishRepository dishRepo;
 
-    public DishController(RestaurantRepository restaurantRepo, DishRepository dishRepo) {
+    private final RestaurantService restaurantService;
+
+    private static final Logger logger = LoggerFactory.getLogger(DishController.class);
+
+
+    public DishController(RestaurantRepository restaurantRepo, DishRepository dishRepo, RestaurantService restaurantService) {
         this.restaurantRepo = restaurantRepo;
+        this.restaurantService = restaurantService;
         this.dishRepo = dishRepo;
     }
 
@@ -33,38 +42,41 @@ public class DishController {
 
 
     @PostMapping("/restaurants/{restaurantId}/dishes")
-    public ResponseEntity<Dish> addDishToRestaurant(@PathVariable Long restaurantId, @RequestBody Dish dish, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<?> addDishToRestaurant(@PathVariable Long restaurantId, @RequestBody Dish dish, UriComponentsBuilder uriBuilder) {
         try{
-            Restaurant restaurant = restaurantRepo.findById(restaurantId).orElseThrow(()-> new RuntimeException("Restaurant not found"));
-            dish.setRestaurant(restaurant);
-            Dish savedDish = dishRepo.save(dish);
-            restaurant.addDish(savedDish);
-            Restaurant savedRestaurant = restaurantRepo.save(restaurant);
+            restaurantService.addDishToRestaurant(restaurantId, dish);
             URI uri = uriBuilder
                     .path("restaurants/{id}/dishes/{dishId}")
-                    .buildAndExpand(savedRestaurant.id(), savedDish.id())
+                    .buildAndExpand(restaurantId, dish.id())
                     .toUri();
             return ResponseEntity.created(uri).build();
         }catch (Exception e){
-            System.out.println("Omer:" + e);
-            return ResponseEntity.badRequest().body(dish);
+            logger.error("CREATE Dish error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
 
-    @PutMapping("/restaurants/{id}/dishes/{dishId}")
-    public ResponseEntity<Void> updateDish(@PathVariable Long id, @PathVariable Long dishId, @RequestBody Dish dish, UriComponentsBuilder uriBuilder) {
+    @PutMapping("/restaurants/{restaurantId}/dishes/{dishId}")
+    public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId, @PathVariable Long dishId, @RequestBody Dish dish, UriComponentsBuilder uriBuilder) {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/restaurants/{restaurantId}/dishes/{dishId}")
+    public ResponseEntity<Void> deleteDish(@PathVariable Long restaurantId, @PathVariable Long dishId) {
+        try {
+            restaurantService.removeDishFromRestaurant(restaurantId, dishId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            logger.error("DELETE Dish Error: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-
-    // FOR TESTING.
+    // FOR DEBUG.
     @GetMapping("/dishes")
     public ResponseEntity<List<Dish>> getAllDishes() {
         return ResponseEntity.ok(this.dishRepo.findAll());
     }
-
-
 
 }
