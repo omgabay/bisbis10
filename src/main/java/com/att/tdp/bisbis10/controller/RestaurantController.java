@@ -1,12 +1,15 @@
 package com.att.tdp.bisbis10.controller;
 
+import com.att.tdp.bisbis10.auxillary.JsonPatchCreator;
+import com.att.tdp.bisbis10.entities.Dish;
 import com.att.tdp.bisbis10.entities.Restaurant;
+import com.att.tdp.bisbis10.entities.UserRating;
 import com.att.tdp.bisbis10.logic.RestaurantService;
 import com.att.tdp.bisbis10.repos.RestaurantRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,12 +27,13 @@ public class RestaurantController {
 
     private final RestaurantService service;
 
-    private final ObjectMapper objectMapper;
 
-    public RestaurantController(RestaurantRepository repository, RestaurantService service, ObjectMapper objectMapper) {
+    private final JsonPatchCreator jsonPatchCreator;
+
+    public RestaurantController(RestaurantRepository repository, RestaurantService service, JsonPatchCreator jsonPatchCreator) {
         this.repository = repository;
         this.service = service;
-        this.objectMapper = objectMapper;
+        this.jsonPatchCreator = jsonPatchCreator;
     }
 
 
@@ -59,11 +63,23 @@ public class RestaurantController {
         return ResponseEntity.created(uri).build();
     }
 
-    @PutMapping(path="/restaurants/{id}", consumes = "application/json-patch+json")
-    ResponseEntity<Void> updateRestaurant(@PathVariable Long id, @RequestBody JsonPatch patch) {
+    @PutMapping(path="/restaurants/{id}")
+    ResponseEntity<Void> updateRestaurant(@PathVariable Long id, @RequestBody Restaurant newRestaurant){
+        try{
+            repository.findById(id).orElseThrow();
+            newRestaurant.setRestaurantId(id);
+            repository.save(newRestaurant);
+            return ResponseEntity.ok().build();
+        }  catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PatchMapping(path="/restaurants/{id}", consumes = "application/json-patch+json")
+    ResponseEntity<Void> patchRestaurant(@PathVariable Long id, @RequestBody JsonPatch patch) throws JsonPatchException, JsonProcessingException {
         try{
             Restaurant restaurant = repository.findById(id).orElseThrow();
-            Restaurant patchedRestaurant = restaurant.applyPatchToRestaurant(patch, objectMapper);
+            Restaurant patchedRestaurant = jsonPatchCreator.applyPatch(patch, restaurant, Restaurant.class);
             repository.save(patchedRestaurant);
             return ResponseEntity.ok().build();
         } catch (JsonPatchException | JsonProcessingException e) {
@@ -72,8 +88,6 @@ public class RestaurantController {
             return ResponseEntity.notFound().build();
         }
     }
-
-
 
     @DeleteMapping("/restaurants/{id}")
     ResponseEntity<Void> deleteRestaurant(@PathVariable Long id) {
@@ -85,6 +99,29 @@ public class RestaurantController {
         // Delete the resource
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
-
     }
+
+
+    // FOR DEBUG
+    @GetMapping("/restaurants/{id}/dishes")
+    ResponseEntity<List<Dish>> getDishesFromRestaurant(@PathVariable Long id){
+        try{
+            Restaurant rest = repository.findById(id).orElseThrow();
+            return ResponseEntity.ok(rest.getDishes());
+        }catch (NoSuchElementException nse){
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/restaurants/{id}/ratings")
+    ResponseEntity<List<UserRating>> getUserRatingOfRestaurant(@PathVariable Long id){
+        try{
+            Restaurant rest = repository.findById(id).orElseThrow();
+            return ResponseEntity.ok(rest.getUserRatings());
+        }catch (NoSuchElementException nse){
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
 }

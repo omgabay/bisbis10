@@ -13,6 +13,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -58,8 +60,24 @@ public class DishController {
 
 
     @PutMapping("/restaurants/{restaurantId}/dishes/{dishId}")
-    public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId, @PathVariable Long dishId, @RequestBody Dish dish, UriComponentsBuilder uriBuilder) {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> updateDish(@PathVariable Long restaurantId, @PathVariable Long dishId, @RequestBody Dish newDish) {
+        try{
+            Restaurant restaurant = restaurantRepo.findById(restaurantId).orElseThrow();
+            dishRepo.findById(dishId).orElseThrow();
+
+            boolean removed = restaurant.getDishes().removeIf((d) -> Objects.equals(d.getDishId(), dishId));
+            if (!removed){
+                throw new NoSuchElementException();
+            }else{
+                newDish.setDishId(dishId);
+                restaurant.getDishes().add(newDish);
+                restaurantRepo.save(restaurant);
+                return ResponseEntity.ok().build();
+            }
+
+        } catch (NoSuchElementException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/restaurants/{restaurantId}/dishes/{dishId}")
